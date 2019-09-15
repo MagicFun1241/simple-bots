@@ -1,3 +1,3 @@
 module.exports = {
-	VkBot: require('./bots/vk-bot')
+	VkBot: require('./src/vk-bot')
 }
