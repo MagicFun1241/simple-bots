@@ -25,57 +25,73 @@ yarn add https://github.com/khok/simple-bots
 Создайте файл *test.js* следующего содержания:
 
 ```javascript
-const {VkBot} = require('simple-bots');
+const { VkBot } = require('simple-bots');
 
-const group = 178837545; //id группы бота
-const token = '914wrwefdsu23u4doiugsdpoiuwe242fwefwdrwe'; //Ключ бота
-const v_api = 5.80; //Версия Long-Poll API.
-
-const bot = new VkBot();
-
-bot.default(async (dialog, text) => {
-    const answer = await dialog.input('Введите что нибудь');
-    dialog.output(`Вы написали ${text}, а ответили ${answer}`);
+const bot = new VkBot({
+    access_token: '914wrwefdsu23u4doiugsdpoiuwe242fwefwdrwe'
 });
 
-bot.long_poll(group, token, v_api);
+bot.default(async (dialog, text) => {
+    const answer = await dialog.wait('Введите что нибудь');
+    dialog.send(`Вы написали ${text}, а ответили ${answer}`);
+});
+
+bot.start();
 ```
 
-Запустите бота командой `node app.js`. Попробуйте написать ему что-нибудь ЛС.
+Запустите бота командой `node test.js`. Попробуйте написать ему что-нибудь ЛС.
+
+### Использование префиксов
+
+```javascript
+const { VkBot } = require('simple-bots');
+
+const bot = new VkBot({
+    access_token: '914wrwefdsu23u4doiugsdpoiuwe242fwefwdrwe'
+});
+
+//Задаём префикс для комманд так
+bot.setBotPrefix('бот');
+//Или так, если хотим задать больше, чем один
+//  bot.setBotPrefix(['бот', 'ботик']);
+
+
+bot.command('привет', dialog => dialog.send('Привет'));
+
+bot.start();
+```
 
 ### Более компексный пример
 
 ```javascript
-const {VkBot} = require('simple-bots');
+const { VkBot } = require('simple-bots');
 const path = require('path');
 
-const group = 178837545; //id группы бота
 const token = '914wrwefdsu23u4doiugsdpoiuwe242fwefwdrwe'; //Ключ бота
 const v_api = 5.80; //Версия Long-Poll API.
 
-//указываем параметр resolveUndefined как true.
-//Когда он true, то при вызове dialog.reject функция, ожидающая ответа, вернет undefined.
-//Если он false, то она генерирует исключение, указаннное с параметрах dialog.reject.
-const bot = new VkBot(true);
-
-//Объявляем команду
-bot.command('/reset', async (dialog) => {
-    //Сбрасываем ожидание ответа от пользователя.
-    if(!dialog.reject())
-        dialog.output(`Используется только при ожидании ответа`);
+const bot = new VkBot({
+    access_token: '914wrwefdsu23u4doiugsdpoiuwe242fwefwdrwe',
+    v_api: 5.80 //Версия Long-Poll API.
 });
 
-bot.command('/hello', async (dialog) => {
+//Объявляем команду
+bot.command('/reset', async dialog => {
+    //Сбрасываем ожидание ответа от пользователя.
+    if(!dialog.reject())
+        dialog.send(`Используется только при ожидании ответа`);
+});
+
+bot.command('/hello', async dialog => {
     //Ожидаем ответа от пользователя.
-    const answer = await dialog.input('Введите что нибудь');
+    const answer = await dialog.wait('Введите что нибудь');
     if(answer != undefined)
-        dialog.output('Вы ввели: ' + answer);
+        dialog.send('Вы ввели: ' + answer);
 });
 
 //Если бот не определил команду, он использует обработчик по умолчанию.
 bot.default(async (dialog, text) => {
-
-    await dialog.output(`Я не знаю, что такое ${text}`);
+    await dialog.send(`Я не знаю, что такое ${text}`);
 
     //Кнопки будут в два ряда, т.е:
     //  Первая кнопка  | другая кнопка
@@ -92,12 +108,12 @@ bot.default(async (dialog, text) => {
         return;
 
     if(btns.some(rows => rows.some(btn => btn == answer || btn.label == answer)))
-        dialog.output(`Спасибо, что выбрали ${answer}`);
+        dialog.send(`Спасибо, что выбрали ${answer}`);
     else
-        dialog.output(`Нет варианта ${answer}`);
+        dialog.send(`Нет варианта ${answer}`);
 });
 
-bot.long_poll(group, token, v_api);
+bot.start();
 console.log('Бот запущен!');
 ```
 Запустите бота: `node test.js`. Подождите пару секунд, и, если не появится ошибка,
@@ -112,17 +128,19 @@ console.log('Бот запущен!');
 `bot.command.default(handler)` задает обработчик по умолчанию, который вызывается, если сообщение
 не совпало ни с одной из команд. В отличие от `command`, в  `handler` также передается текст сообщения.
 Обратите внимание, что обработчик по умолчанию не вызовется, если мы ожидаем от пользователя ответа
-(например, через `await dialog.input()` `await dialog.askOption()`), а команда - вызовется.
+(например, через `await dialog.wait()` `await dialog.askOption()`), а команда - вызовется.
 
 Очистить список команд можно так: `dialog.cleanCommands()`.
 
-`dialog` содержит async функции, реализующие работу с VkApi. Примеры их использования:
+`dialog` содержит ряд свойств и async функций, реализующих работу с VkApi. Примеры их использования:
 
-* `await dialog.output(message, attachment = undefined)` - сообщение пользователю. `attachment` -
+* `message` - объект, содержащий данные о текущем сообщении. В свою очередь содержит поля date, text и другие.
+
+* `await dialog.send(message, attachment = undefined)` - отправляет сообщение пользователю. `attachment` -
  массив [медиавложений](https://vk.com/dev/attachments_m). message может быть пустой строкой, если вложения не пусты.
  `await` можно опустить, но лучше использовать его, если вам важен порядок одновременно отправленных сообщений.
  
- * `await dialog.input(message = undefined)` - ожидает от пользователя ввода текста. Обязательно используйте с `await`;
+ * `await dialog.wait(message = undefined)` - ожидает от пользователя ввода текста. Обязательно используйте с `await`;
  
  * `await dialog.askOption(message, options)` - показывает пользователю клавиатуру. options может быть одномерным
  либо двумерным массивом, чтобы показать кнопки в несколько строк. Каждый элемент массива может быть простым текстом, либо
