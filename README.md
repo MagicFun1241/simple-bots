@@ -90,7 +90,7 @@ bot.command('/hello', async dialog => {
 });
 
 //Если бот не определил команду, он использует обработчик по умолчанию.
-bot.default(async (dialog, text) => {
+bot.default(async dialog => {
     await dialog.send(`Я не знаю, что такое ${text}`);
 
     //Кнопки будут в два ряда, т.е:
@@ -119,6 +119,36 @@ console.log('Бот запущен!');
 Запустите бота: `node test.js`. Подождите пару секунд, и, если не появится ошибка,
 попробуйте отправлять ему через ВК команды */reset*, */hello* или что-нибудь еще.
 
+
+### Использование invoke функции
+
+```javascript
+const { VkBot } = require('simple-bots');
+
+const bot = new VkBot({
+    access_token: '914wrwefdsu23u4doiugsdpoiuwe242fwefwdrwe'
+});
+
+bot.command('привет', async dialog => dialog.send('Привет'));
+
+bot.command('начать', async dialog => {
+    const btns = [
+        [ { label: 'Получить привет', color: "primary" } ]
+    ];
+
+    const answer = await dialog.askOption('Выбери кнопку', btns);
+
+    if(answer == undefined) return;
+
+    if(answer == 'Получить привет')
+        dialog.invoke('привет');
+    else
+        dialog.send(`Нет варианта ${answer}`);
+});
+
+bot.start();
+```
+
 ### Описание API бота
 
 Команды бота задаются так `bot.command('команда', handler)`. Когда пользователь присылает
@@ -141,6 +171,8 @@ console.log('Бот запущен!');
  `await` можно опустить, но лучше использовать его, если вам важен порядок одновременно отправленных сообщений.
  
  * `await dialog.wait(message = undefined)` - ожидает от пользователя ввода текста. Обязательно используйте с `await`;
+
+ * `dialog.invoke(command)` - вызывает handler команды, переданной в `command`.;
  
  * `await dialog.askOption(message, options)` - показывает пользователю клавиатуру. options может быть одномерным
  либо двумерным массивом, чтобы показать кнопки в несколько строк. Каждый элемент массива может быть простым текстом, либо
