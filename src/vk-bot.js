@@ -12,13 +12,48 @@ class VkBot extends Bot {
 	}
 
 	async showKeyboard(peer_id, message, options) {
-		if(options[0].constructor !== Array)
-			options = [options];
+		if(options[0].constructor !== Array) options = [options];
+
+		/*const buttons = options.map(opts =>
+			opts.map(opt => {
+				let obj = {};
+
+				switch (typeof opt) {
+					case 'array':
+						obj.action = {
+							type: opt.type || 'text',
+							payload: (opt.type != undefined) ? "{\"button\": \"1\"}" : undefined
+						};
+
+						if (opt.type == undefined || obj.action.type == 'text') {
+							obj.color = opt.color || 'default';
+							obj.action.label = opt.label || opt;
+						}
+						break;
+					case 'string':
+							obj.action = {
+								type: 'text',
+								label: opt
+							};
+							obj.color = 'default';
+							break;
+						break;
+				}
+				if (opt.type == undefined) {
+					if (typeof opt == 'array')
+					opt.type = 'text'
+				}
+
+				return obj;
+			})
+		);
+		*/
 
 		const buttons = options.map(opts =>
 			opts.map(opt => { return {
 				"action": {
 		          "type": "text",
+		          // "payload": "{\"button\": \"1\"}",
 		          "label": opt.label || opt
 		        },
 		        "color": opt.color || "default"
@@ -60,7 +95,7 @@ class VkBot extends Bot {
 				group_id: vk.session.group_id
 			},
 			forLongPollServer: {
-				wait: "15" 
+				wait: "15"
 			}
 		});
 
@@ -74,7 +109,7 @@ class VkBot extends Bot {
 		};
 
 		//Слушаем новые сообщения
-		connection.on('message_new', (msg) => {
+		connection.on('message_new', msg => {
 			let peer_id, text, conversation = false, mentioned = false;
 
 			if (this.v_api >= 5.80) {

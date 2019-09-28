@@ -1,9 +1,9 @@
 class Bot {
-	constructor(resolveUndefined) {
+	constructor() {
 		this.waiting = {};
 		this.reset = {};
 		this.commands = {};
-		this.resolveUndefined = resolveUndefined;
+		this.resolveUndefined = false;
 	}
 
 	//Прекратить ожидать ответ от uid.
@@ -71,10 +71,10 @@ class Bot {
 
 	//Обработчик текстовых сообщений
 	handleText(uid, text, conversation, mentioned, message) {
-		if(conversation && !mentioned) {
+		if (conversation && !mentioned) {
 			switch (typeof this.botPrefix) {
 				case 'string':
-					if (text.toLowerCase().startsWith(this.botPrefix))
+					if (text.startsWith(this.botPrefix))
 						text = text.substring(this.botPrefix.length, text.length).trim();
 					else return;
 					break;
@@ -85,13 +85,13 @@ class Bot {
 						let args = text.toLowerCase().split(' ');
 			
 						if (index != this.botPrefix.length - 1 && args[0] == prefix) {
-							text = text.substring(prefix.length, text.length).trim();
+							text = text.toLowerCase().substring(prefix.length, text.length).trim();
 							ok = true;
 						}
 						else if (index == this.botPrefix.length - 1 && !ok) {
 							if (args[0] != prefix) ok = false;
 							else {
-								text = text.substring(prefix.length, text.length).trim();
+								text = text.toLowerCase().substring(prefix.length, text.length).trim();
 								ok = true;
 							}
 						}
@@ -101,7 +101,7 @@ class Bot {
 			}
 		}
 
-		const command = this.commands[text];
+		const command = this.commands[text.toLowerCase()];
 
 		if(!command && this.resolveAnswer(uid, text))
 			return;
@@ -111,7 +111,7 @@ class Bot {
 		if (command)
 			command(dialog);
 		else if (this.defaultHandler)
-			this.defaultHandler(dialog, text);
+			this.defaultHandler(dialog);
 	}
 
 	makeDialog(uid, conversation, mentioned, message) {
@@ -130,13 +130,16 @@ class Bot {
 				await bot.sendMessage(uid, message, attachment)
 			},
 			reject(code) {
-				return this.rejectAnswer(uid, code);
+				return bot.rejectAnswer(uid, code);
 			},
-			async uploadFile(filePath){
+			async uploadFile(filePath) {
 				return await this.uploadFile(uid, filePath);
 			},
 			async custom(method, params) {
-				return this.customCommand(method, params);
+				return bot.customCommand(method, params);
+			},
+			invoke(text) {
+				bot.commands[text](bot.makeDialog(uid, conversation, mentioned, message));
 			},
 			getId() {
 				return uid;
