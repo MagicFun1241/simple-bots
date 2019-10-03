@@ -89,7 +89,7 @@ class Bot {
 							ok = true;
 						}
 						else if (index == this.botPrefix.length - 1 && !ok) {
-							if (args[0] != prefix) ok = false;
+							if (args[0] !== prefix) ok = false;
 							else {
 								text = text.toLowerCase().substring(prefix.length, text.length).trim();
 								ok = true;
@@ -128,6 +128,18 @@ class Bot {
 			},
 			async send(message, attachment) {
 				await bot.sendMessage(uid, message, attachment)
+			},
+			async reply(message, attachment) {
+				let args = {
+					peer_id: this.message.from_id,
+					message,
+					reply_to: this.message.id,
+					attachment
+				};
+
+				if (bot.options['api_v'] >= 5.92) args.random_id = 0;
+
+				await bot.customCommand('messages.send', args);
 			},
 			reject(code) {
 				return bot.rejectAnswer(uid, code);
